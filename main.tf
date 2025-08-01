@@ -1,9 +1,5 @@
-# Internal Managed Load Balancer
-# This module creates the following resources in order:
-# 1. Global Backend Service
-# 2. Global URL Map
-# 3. Global Target HTTP Proxy  
-# 4. Global Forwarding Rule
+# Cross region application Internal Load Balancer
+
 
 data "google_compute_network" "network" {
   name    = var.network
