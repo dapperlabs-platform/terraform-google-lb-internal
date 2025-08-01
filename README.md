@@ -1,1 +1,1 @@
-# terraform-google-net-load-balancer
+# terraform-google-lb-internal
