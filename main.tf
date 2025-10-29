@@ -8,39 +8,33 @@ data "google_compute_network" "network" {
 
 data "google_compute_subnetwork" "network" {
   name    = var.subnetwork
-  project = var.network_project == "" ? var.project : var.network_project
+  project = var.network_project
   region  = var.region
 }
 
 # Global Forwarding Rule
 resource "google_compute_global_forwarding_rule" "default" {
-  project               = var.project
+  project               = var.network_project
   name                  = var.name
-  target                = google_compute_target_http_proxy.default.self_link
   load_balancing_scheme = "INTERNAL_MANAGED"
-  ip_address            = var.ip_address
-  ip_protocol           = upper(var.ip_protocol)
-  port_range            = var.ports != null && length(var.ports) > 0 ? var.ports[0] : "80"
-  subnetwork            = data.google_compute_subnetwork.network.self_link
   network               = data.google_compute_network.network.self_link
-  labels                = var.labels
+  subnetwork            = data.google_compute_subnetwork.network.self_link
+  target                = google_compute_target_http_proxy.default.self_link
+  ip_address            = var.ip_address
+  ip_protocol           = var.ip_protocol
+  port_range            = var.port
 }
 
 # Global Backend Service
 resource "google_compute_backend_service" "default" {
-  provider = google-beta
-  project  = var.project
-  name = {
-    "tcp"   = "${var.name}-with-tcp-hc",
-    "http"  = "${var.name}-with-http-hc",
-    "https" = "${var.name}-with-https-hc",
-  }[var.health_check["type"]]
-
-  load_balancing_scheme           = "INTERNAL_MANAGED"
-  protocol                        = upper(var.ip_protocol)
-  session_affinity                = var.session_affinity
-  timeout_sec                     = 30
-  connection_draining_timeout_sec = var.connection_draining_timeout_sec
+  project               = var.project
+  name                  = var.name
+  load_balancing_scheme = "INTERNAL_MANAGED"
+  protocol              = var.ip_protocol
+  timeout_sec           = 30
+  health_checks         = [google_compute_health_check.nba_hc.id]
+  session_affinity      = "NONE"
+  locality_lb_policy    = "ROUND_ROBIN"
 
   dynamic "backend" {
     for_each = var.backends
@@ -50,21 +44,13 @@ resource "google_compute_backend_service" "default" {
       balancing_mode        = lookup(backend.value, "balancing_mode", "RATE")
       capacity_scaler       = lookup(backend.value, "capacity_scaler", 1)
       max_rate_per_endpoint = lookup(backend.value, "max_rate_per_endpoint", null)
-      max_rate              = lookup(backend.value, "max_rate", null)
     }
   }
-
-  health_checks = concat(
-    google_compute_health_check.tcp[*].self_link,
-    google_compute_health_check.http[*].self_link,
-    google_compute_health_check.https[*].self_link
-  )
 
   log_config {
     enable = false
   }
 
-  locality_lb_policy = "ROUND_ROBIN"
 }
 
 # Global URL Map
@@ -81,44 +67,9 @@ resource "google_compute_target_http_proxy" "default" {
   url_map = google_compute_url_map.default.self_link
 }
 
-# Health Checks
-resource "google_compute_health_check" "tcp" {
-  provider = google-beta
-  count    = var.health_check["type"] == "tcp" ? 1 : 0
-  project  = var.project
-  name     = "${var.name}-hc-tcp"
-
-  timeout_sec         = var.health_check["timeout_sec"]
-  check_interval_sec  = var.health_check["check_interval_sec"]
-  healthy_threshold   = var.health_check["healthy_threshold"]
-  unhealthy_threshold = var.health_check["unhealthy_threshold"]
-
-  tcp_health_check {
-    port         = var.health_check["port"]
-    request      = var.health_check["request"]
-    response     = var.health_check["response"]
-    port_name    = var.health_check["port_name"]
-    proxy_header = var.health_check["proxy_header"]
-  }
-
-  dynamic "log_config" {
-    for_each = var.health_check["enable_log"] ? [true] : []
-    content {
-      enable = true
-    }
-  }
-}
-
-resource "google_compute_health_check" "http" {
-  provider = google-beta
-  count    = var.health_check["type"] == "http" ? 1 : 0
-  project  = var.project
-  name     = "${var.name}-hc-http"
-
-  timeout_sec         = var.health_check["timeout_sec"]
-  check_interval_sec  = var.health_check["check_interval_sec"]
-  healthy_threshold   = var.health_check["healthy_threshold"]
-  unhealthy_threshold = var.health_check["unhealthy_threshold"]
+resource "google_compute_health_check" "health_check" {
+  project = var.project
+  name    = "${var.product_name}-hc-http"
 
   http_health_check {
     port         = var.health_check["port"]
@@ -129,40 +80,10 @@ resource "google_compute_health_check" "http" {
     proxy_header = var.health_check["proxy_header"]
   }
 
-  dynamic "log_config" {
-    for_each = var.health_check["enable_log"] ? [true] : []
-    content {
-      enable = true
-    }
-  }
-}
-
-resource "google_compute_health_check" "https" {
-  provider = google-beta
-  count    = var.health_check["type"] == "https" ? 1 : 0
-  project  = var.project
-  name     = "${var.name}-hc-https"
-
-  timeout_sec         = var.health_check["timeout_sec"]
-  check_interval_sec  = var.health_check["check_interval_sec"]
-  healthy_threshold   = var.health_check["healthy_threshold"]
-  unhealthy_threshold = var.health_check["unhealthy_threshold"]
-
-  https_health_check {
-    port         = var.health_check["port"]
-    request_path = var.health_check["request_path"]
-    host         = var.health_check["host"]
-    response     = var.health_check["response"]
-    port_name    = var.health_check["port_name"]
-    proxy_header = var.health_check["proxy_header"]
-  }
-
-  dynamic "log_config" {
-    for_each = var.health_check["enable_log"] ? [true] : []
-    content {
-      enable = true
-    }
-  }
+  check_interval_sec  = 5
+  timeout_sec         = 5
+  healthy_threshold   = 2
+  unhealthy_threshold = 2
 }
 
 # Firewall Rules
@@ -174,7 +95,7 @@ resource "google_compute_firewall" "default-ilb-fw" {
 
   allow {
     protocol = lower(var.ip_protocol)
-    ports    = var.ports
+    ports    = var.port_range
   }
 
   source_ranges           = var.source_ip_ranges
@@ -210,6 +131,53 @@ resource "google_compute_firewall" "default-hc" {
     for_each = var.firewall_enable_logging ? [true] : []
     content {
       metadata = "INCLUDE_ALL_METADATA"
+    }
+  }
+}
+
+# DNS CONFIG
+
+# DNS Managed Zone
+resource "google_dns_managed_zone" "default" {
+  count       = var.dns_record_name != "" ? 1 : 0
+  project     = var.dns_project == "" ? var.project : var.dns_project
+  name        = var.dns_managed_zone_name
+  dns_name    = "internal.dapperlabs."
+  description = "Internal DNS zone for Dapper Labs"
+}
+
+# DNS Record Set with Geo Routing Policy
+resource "google_dns_record_set" "geo" {
+  count        = var.dns_record_name != "" ? 1 : 0
+  name         = var.dns_record_name
+  managed_zone = google_dns_managed_zone.default[0].name
+  project      = var.dns_project == "" ? var.project : var.dns_project
+  type         = "A"
+  ttl          = var.dns_ttl
+
+  routing_policy {
+    dynamic "geo" {
+      for_each = var.geo_locations
+      content {
+        location = geo.value.location
+
+        dynamic "health_checked_targets" {
+          for_each = geo.value.health_checked_targets != null ? [geo.value.health_checked_targets] : []
+          content {
+            dynamic "internal_load_balancers" {
+              for_each = health_checked_targets.value.internal_load_balancers
+              content {
+                ip_address         = internal_load_balancers.value.ip_address
+                ip_protocol        = internal_load_balancers.value.ip_protocol
+                load_balancer_type = internal_load_balancers.value.load_balancer_type
+                network_url        = internal_load_balancers.value.network_url
+                port               = internal_load_balancers.value.port
+                project            = internal_load_balancers.value.project
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

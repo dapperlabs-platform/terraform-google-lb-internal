@@ -44,10 +44,16 @@ variable "session_affinity" {
   default     = "NONE"
 }
 
-variable "ports" {
-  description = "List of ports to forward to backend services. Max is 5. The `ports` or `all_ports` are mutually exclusive."
+variable "port_range" {
+  description = "Port range to forward to backend services. Max is 5. The `ports` or `all_ports` are mutually exclusive."
   type        = list(string)
-  default     = null
+  default     = ["80"]
+}
+
+variable "port" {
+  description = "Port to forward to backend services. Max is 5. The `ports` or `all_ports` are mutually exclusive."
+  type        = string
+  default     = "80"
 }
 
 variable "health_check" {
@@ -139,4 +145,76 @@ variable "labels" {
   type        = map(string)
 }
 
+variable "dns_record_name" {
+  description = "DNS record name (e.g., '*.studio-platform.internal.dapperlabs.')"
+  type        = string
+}
 
+variable "dns_managed_zone_name" {
+  description = "Name of the DNS managed zone"
+  type        = string
+  default     = "dapperlabs-internal"
+}
+
+variable "dns_project" {
+  description = "Project ID for DNS resources"
+  type        = string
+  default     = ""
+}
+
+variable "dns_ttl" {
+  description = "TTL for DNS record"
+  type        = number
+  default     = 300
+}
+
+variable "geo_locations" {
+  description = "List of geo locations for DNS routing policy"
+  type = list(object({
+    location = string
+    health_checked_targets = optional(object({
+      internal_load_balancers = list(object({
+        ip_address         = string
+        ip_protocol        = string
+        load_balancer_type = string
+        network_url        = string
+        port               = string
+        project            = string
+      }))
+    }))
+  }))
+  default = []
+}
+
+# Subnetwork specific variables for advanced configuration
+variable "subnetwork_gateway_address" {
+  description = "Gateway address of the subnetwork"
+  type        = string
+  default     = null
+}
+
+variable "subnetwork_ip_cidr_range" {
+  description = "IP CIDR range of the subnetwork"
+  type        = string
+  default     = null
+}
+
+variable "subnetwork_id" {
+  description = "ID of the subnetwork"
+  type        = string
+  default     = null
+}
+
+variable "subnetwork_secondary_ip_ranges" {
+  description = "Secondary IP ranges of the subnetwork (for pods, services, etc.)"
+  type = list(object({
+    range_name    = string
+    ip_cidr_range = string
+  }))
+  default = []
+}
+
+variable "product_name" {
+  description = "Product name for the internal load balancer"
+  type        = string
+}

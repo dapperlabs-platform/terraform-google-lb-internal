@@ -27,3 +27,23 @@ output "target_proxy" {
   description = "The target HTTP proxy self_link."
   value       = google_compute_target_http_proxy.default.self_link
 }
+
+output "subnetwork" {
+  description = "The subnetwork self_link."
+  value       = data.google_compute_subnetwork.network.self_link
+}
+
+output "subnetwork_gateway_address" {
+  description = "The subnetwork gateway address."
+  value       = data.google_compute_subnetwork.network.gateway_address
+}
+
+output "subnetwork_ip_cidr_range" {
+  description = "The IP CIDR range of the subnetwork."
+  value       = data.google_compute_subnetwork.network.ip_cidr_range
+}
+
+output "subnetwork_secondary_ip_ranges" {
+  description = "Secondary IP ranges of the subnetwork."
+  value       = data.google_compute_subnetwork.network.secondary_ip_range
+}
