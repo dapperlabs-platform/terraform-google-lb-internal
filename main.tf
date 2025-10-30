@@ -1,5 +1,8 @@
 # Cross region application Internal Load Balancer
 
+locals {
+  default_region = var.default_region != null ? var.default_region : keys(var.regions)[0]
+}
 
 data "google_compute_network" "network" {
   name    = var.network
@@ -7,17 +10,17 @@ data "google_compute_network" "network" {
 }
 
 data "google_compute_subnetwork" "subnetwork" {
-  for_each = toset(var.regions)
+  for_each = var.regions
   name     = var.subnetwork
   project  = var.network_project
-  region   = each.value
+  region   = each.key
 }
 
 # Global URL Map
 resource "google_compute_url_map" "default" {
   project         = var.network_project
   name            = "${var.product_name}-internal-lb"
-  default_service = google_compute_backend_service.default[var.default_region].self_link
+  default_service = google_compute_backend_service.default[local.default_region].self_link
 }
 
 # Global Target HTTP Proxy
@@ -29,24 +32,24 @@ resource "google_compute_target_http_proxy" "default" {
 
 # Regional Forwarding Rule
 resource "google_compute_forwarding_rule" "default" {
-  for_each              = toset(var.regions)
+  for_each              = var.regions
   project               = var.network_project
-  name                  = "${var.product_name}-${each.value}"
-  region                = each.value
+  name                  = "${var.product_name}-${each.key}"
+  region                = each.key
   load_balancing_scheme = "INTERNAL_MANAGED"
   network               = data.google_compute_network.network.self_link
-  subnetwork            = data.google_compute_subnetwork.subnetwork[each.value].self_link
+  subnetwork            = data.google_compute_subnetwork.subnetwork[each.key].self_link
   target                = google_compute_target_http_proxy.default.self_link
-  ip_address            = var.proxy_only_ip[each.value]
+  ip_address            = each.value.proxy_only_ip
   ip_protocol           = var.ip_protocol
   port_range            = var.port
 }
 
 # Regional Backend Service
 resource "google_compute_backend_service" "default" {
-  for_each              = toset(var.regions)
+  for_each              = var.regions
   project               = var.project
-  name                  = "${var.product_name}-${each.value}"
+  name                  = "${var.product_name}-${each.key}"
   load_balancing_scheme = "INTERNAL_MANAGED"
   protocol              = var.ip_protocol
   timeout_sec           = 30
@@ -55,16 +58,16 @@ resource "google_compute_backend_service" "default" {
   locality_lb_policy    = "ROUND_ROBIN"
 
   dynamic "backend" {
-    for_each = var.backends[each.value] != null ? flatten([
-      for backend_config in var.backends[each.value] : [
-        for zone in var.zones[each.value] : {
+    for_each = flatten([
+      for backend_config in var.backends : [
+        for zone in each.value.zones : {
           backend_config = backend_config
           zone           = zone
         }
       ]
-    ]) : []
+    ])
     content {
-      group                 = "https://www.googleapis.com/compute/v1/projects/${var.project}/zones/${each.value}-${backend.value.zone}/networkEndpointGroups/${backend.value.backend_config.group}"
+      group                 = "https://www.googleapis.com/compute/v1/projects/${var.project}/zones/${each.key}-${backend.value.zone}/networkEndpointGroups/${backend.value.backend_config.group}"
       description           = lookup(backend.value.backend_config, "description", null)
       balancing_mode        = lookup(backend.value.backend_config, "balancing_mode", "RATE")
       capacity_scaler       = lookup(backend.value.backend_config, "capacity_scaler", 1)
@@ -124,9 +127,9 @@ resource "google_compute_firewall" "default-ilb-fw" {
 }
 
 resource "google_compute_firewall" "default-hc" {
-  for_each = var.create_health_check_firewall ? toset(var.regions) : []
+  for_each = var.create_health_check_firewall ? var.regions : {}
   project  = var.network_project
-  name     = "${var.product_name}-${each.value}-hc"
+  name     = "${var.product_name}-${each.key}-hc"
   network  = data.google_compute_network.network.name
 
   allow {

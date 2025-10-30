@@ -5,15 +5,17 @@ variable "project" {
 }
 
 variable "regions" {
-  description = "Regions for cloud resources."
-  type        = list(string)
-  default     = ["us-west1"]
+  description = "Map of regions with their configuration. Each region must have zones and proxy_only_ip."
+  type = map(object({
+    zones         = list(string)
+    proxy_only_ip = string
+  }))
 }
 
 variable "default_region" {
-  description = "The region used for the default backend service in the URL map"
+  description = "The region used for the default backend service in the URL map. If not set, uses the first region in the regions map."
   type        = string
-  default     = "us-west1"
+  default     = null
 }
 
 variable "network" {
@@ -41,14 +43,14 @@ variable "name" {
 }
 
 variable "backends" {
-  description = "Map of regions to lists of backends. Each backend should have 'group' (NEG name) and optional fields like 'description', 'balancing_mode', etc. The NEG name will be automatically constructed into the full GCP resource URL."
-  type = map(list(object({
+  description = "List of backends. Each backend should have 'group' (NEG name) and optional fields like 'description', 'balancing_mode', etc. The NEG name is the same across all regions and will be automatically constructed into the full GCP resource URL for each region/zone."
+  type = list(object({
     group                 = string
-    description           = optional(string)
-    balancing_mode        = optional(string)
-    capacity_scaler       = optional(number)
-    max_rate_per_endpoint = optional(number)
-  })))
+    description           = optional(string, null),
+    balancing_mode        = optional(string, "RATE")
+    capacity_scaler       = optional(number, 100)
+    max_rate_per_endpoint = optional(number, 100)
+  }))
 }
 
 variable "session_affinity" {
@@ -69,10 +71,6 @@ variable "port" {
   default     = "80"
 }
 
-variable "zones" {
-  description = "Map of region to list of zones for backend services."
-  type        = map(list(string))
-}
 
 variable "health_check" {
   description = "Health check to determine whether instances are responsive and able to do work"
@@ -123,10 +121,6 @@ variable "target_service_accounts" {
   default     = null
 }
 
-variable "proxy_only_ip" {
-  description = "Map of region to IP address for each regional forwarding rule. IPs should be pre-allocated in the shared VPC."
-  type        = map(string)
-}
 
 variable "ip_protocol" {
   description = "The IP protocol for the backend and frontend forwarding rule. TCP or UDP."
