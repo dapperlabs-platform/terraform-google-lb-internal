@@ -76,18 +76,18 @@ variable "health_check" {
   description = "Health check to determine whether instances are responsive and able to do work"
   type = object({
     type                = string
-    check_interval_sec  = optional(number)
-    healthy_threshold   = optional(number)
-    timeout_sec         = optional(number)
-    unhealthy_threshold = optional(number)
-    response            = optional(string)
-    proxy_header        = optional(string)
-    port                = optional(number)
-    port_name           = optional(string)
-    request             = optional(string)
-    request_path        = optional(string)
-    host                = optional(string)
-    enable_log          = optional(bool)
+    check_interval_sec  = optional(number, 5)
+    healthy_threshold   = optional(number, 2)
+    timeout_sec         = optional(number, 5)
+    unhealthy_threshold = optional(number, 2)
+    response            = optional(string, null)
+    proxy_header        = optional(string, null)
+    port                = optional(number, 80)
+    port_name           = optional(string, null)
+    request             = optional(string, null)
+    request_path        = optional(string, null)
+    host                = optional(string, null)
+    enable_log          = optional(bool, false)
   })
 }
 
