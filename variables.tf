@@ -41,8 +41,14 @@ variable "name" {
 }
 
 variable "backends" {
-  description = "Map of regions to lists of backends. Each backend should be a map of key-value pairs, must have the 'group' key."
-  type        = map(list(any))
+  description = "Map of regions to lists of backends. Each backend should have 'group' (NEG name) and optional fields like 'description', 'balancing_mode', etc. The NEG name will be automatically constructed into the full GCP resource URL."
+  type = map(list(object({
+    group                 = string
+    description           = optional(string)
+    balancing_mode        = optional(string)
+    capacity_scaler       = optional(number)
+    max_rate_per_endpoint = optional(number)
+  })))
 }
 
 variable "session_affinity" {
@@ -61,6 +67,11 @@ variable "port" {
   description = "Port to forward to backend services. Max is 5. The `ports` or `all_ports` are mutually exclusive."
   type        = string
   default     = "80"
+}
+
+variable "zones" {
+  description = "Map of region to list of zones for backend services."
+  type        = map(list(string))
 }
 
 variable "health_check" {

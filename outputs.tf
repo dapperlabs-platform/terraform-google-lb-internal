@@ -30,20 +30,20 @@ output "target_proxy" {
 
 output "subnetwork" {
   description = "The subnetwork self_links (map by region)."
-  value       = { for k, v in data.google_compute_subnetwork.network : k => v.self_link }
+  value       = { for k, v in data.google_compute_subnetwork.subnetwork : k => v.self_link }
 }
 
 output "subnetwork_gateway_address" {
   description = "The subnetwork gateway addresses (map by region)."
-  value       = { for k, v in data.google_compute_subnetwork.network : k => v.gateway_address }
+  value       = { for k, v in data.google_compute_subnetwork.subnetwork : k => v.gateway_address }
 }
 
 output "subnetwork_ip_cidr_range" {
   description = "The IP CIDR ranges of the subnetworks (map by region)."
-  value       = { for k, v in data.google_compute_subnetwork.network : k => v.ip_cidr_range }
+  value       = { for k, v in data.google_compute_subnetwork.subnetwork : k => v.ip_cidr_range }
 }
 
 output "subnetwork_secondary_ip_ranges" {
   description = "Secondary IP ranges of the subnetworks (map by region)."
-  value       = { for k, v in data.google_compute_subnetwork.network : k => v.secondary_ip_range }
+  value       = { for k, v in data.google_compute_subnetwork.subnetwork : k => v.secondary_ip_range }
 }

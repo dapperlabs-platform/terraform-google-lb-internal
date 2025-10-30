@@ -35,7 +35,7 @@ resource "google_compute_forwarding_rule" "default" {
   region                = each.value
   load_balancing_scheme = "INTERNAL_MANAGED"
   network               = data.google_compute_network.network.self_link
-  subnetwork            = data.google_compute_subnetwork.network[each.value].self_link
+  subnetwork            = data.google_compute_subnetwork.subnetwork[each.value].self_link
   target                = google_compute_target_http_proxy.default.self_link
   ip_address            = var.proxy_only_ip[each.value]
   ip_protocol           = var.ip_protocol
@@ -55,13 +55,20 @@ resource "google_compute_backend_service" "default" {
   locality_lb_policy    = "ROUND_ROBIN"
 
   dynamic "backend" {
-    for_each = var.backends[each.value] != null ? var.backends[each.value] : []
+    for_each = var.backends[each.value] != null ? flatten([
+      for backend_config in var.backends[each.value] : [
+        for zone in var.zones[each.value] : {
+          backend_config = backend_config
+          zone           = zone
+        }
+      ]
+    ]) : []
     content {
-      group                 = lookup(backend.value, "group", null)
-      description           = lookup(backend.value, "description", null)
-      balancing_mode        = lookup(backend.value, "balancing_mode", "RATE")
-      capacity_scaler       = lookup(backend.value, "capacity_scaler", 1)
-      max_rate_per_endpoint = lookup(backend.value, "max_rate_per_endpoint", null)
+      group                 = "https://www.googleapis.com/compute/v1/projects/${var.project}/zones/${each.value}-${backend.value.zone}/networkEndpointGroups/${backend.value.backend_config.group}"
+      description           = lookup(backend.value.backend_config, "description", null)
+      balancing_mode        = lookup(backend.value.backend_config, "balancing_mode", "RATE")
+      capacity_scaler       = lookup(backend.value.backend_config, "capacity_scaler", 1)
+      max_rate_per_endpoint = lookup(backend.value.backend_config, "max_rate_per_endpoint", null)
     }
   }
 
