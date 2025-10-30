@@ -37,7 +37,7 @@ resource "google_compute_forwarding_rule" "default" {
   network               = data.google_compute_network.network.self_link
   subnetwork            = data.google_compute_subnetwork.network[each.value].self_link
   target                = google_compute_target_http_proxy.default.self_link
-  ip_address            = var.ip_address[each.value]
+  ip_address            = var.proxy_only_ip[each.value]
   ip_protocol           = var.ip_protocol
   port_range            = var.port
 }

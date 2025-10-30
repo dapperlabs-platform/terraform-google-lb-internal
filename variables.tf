@@ -108,7 +108,7 @@ variable "target_service_accounts" {
   default     = null
 }
 
-variable "ip_address" {
+variable "proxy_only_ip" {
   description = "Map of region to IP address for each regional forwarding rule. IPs should be pre-allocated in the shared VPC."
   type        = map(string)
 }
