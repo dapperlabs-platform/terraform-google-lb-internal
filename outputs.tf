@@ -1,21 +1,21 @@
 output "ip_address" {
-  description = "The internal IP assigned to the global forwarding rule."
-  value       = google_compute_global_forwarding_rule.default.ip_address
+  description = "The internal IP addresses assigned to the regional forwarding rules (map by region)."
+  value       = { for k, v in google_compute_forwarding_rule.default : k => v.ip_address }
 }
 
 output "forwarding_rule" {
-  description = "The forwarding rule self_link."
-  value       = google_compute_global_forwarding_rule.default.self_link
+  description = "The regional forwarding rule self_links (map by region)."
+  value       = { for k, v in google_compute_forwarding_rule.default : k => v.self_link }
 }
 
 output "forwarding_rule_id" {
-  description = "The forwarding rule id."
-  value       = google_compute_global_forwarding_rule.default.id
+  description = "The regional forwarding rule ids (map by region)."
+  value       = { for k, v in google_compute_forwarding_rule.default : k => v.id }
 }
 
 output "backend_service" {
-  description = "The backend service self_link."
-  value       = google_compute_backend_service.default.self_link
+  description = "The regional backend service self_links (map by region)."
+  value       = { for k, v in google_compute_backend_service.default : k => v.self_link }
 }
 
 output "url_map" {
@@ -29,21 +29,21 @@ output "target_proxy" {
 }
 
 output "subnetwork" {
-  description = "The subnetwork self_link."
-  value       = data.google_compute_subnetwork.network.self_link
+  description = "The subnetwork self_links (map by region)."
+  value       = { for k, v in data.google_compute_subnetwork.network : k => v.self_link }
 }
 
 output "subnetwork_gateway_address" {
-  description = "The subnetwork gateway address."
-  value       = data.google_compute_subnetwork.network.gateway_address
+  description = "The subnetwork gateway addresses (map by region)."
+  value       = { for k, v in data.google_compute_subnetwork.network : k => v.gateway_address }
 }
 
 output "subnetwork_ip_cidr_range" {
-  description = "The IP CIDR range of the subnetwork."
-  value       = data.google_compute_subnetwork.network.ip_cidr_range
+  description = "The IP CIDR ranges of the subnetworks (map by region)."
+  value       = { for k, v in data.google_compute_subnetwork.network : k => v.ip_cidr_range }
 }
 
 output "subnetwork_secondary_ip_ranges" {
-  description = "Secondary IP ranges of the subnetwork."
-  value       = data.google_compute_subnetwork.network.secondary_ip_range
+  description = "Secondary IP ranges of the subnetworks (map by region)."
+  value       = { for k, v in data.google_compute_subnetwork.network : k => v.secondary_ip_range }
 }

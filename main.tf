@@ -6,38 +6,56 @@ data "google_compute_network" "network" {
   project = var.network_project == "" ? var.project : var.network_project
 }
 
-data "google_compute_subnetwork" "network" {
-  name    = var.subnetwork
-  project = var.network_project
-  region  = var.region
+data "google_compute_subnetwork" "subnetwork" {
+  for_each = toset(var.regions)
+  name     = var.subnetwork
+  project  = var.network_project
+  region   = each.value
 }
 
-# Global Forwarding Rule
-resource "google_compute_global_forwarding_rule" "default" {
+# Global URL Map
+resource "google_compute_url_map" "default" {
+  project         = var.network_project
+  name            = "${var.product_name}-internal-lb"
+  default_service = google_compute_backend_service.default[var.default_region].self_link
+}
+
+# Global Target HTTP Proxy
+resource "google_compute_target_http_proxy" "default" {
+  project = var.network_project
+  name    = "${var.product_name}-internal-lb-http-proxy"
+  url_map = google_compute_url_map.default.self_link
+}
+
+# Regional Forwarding Rule
+resource "google_compute_forwarding_rule" "default" {
+  for_each              = toset(var.regions)
   project               = var.network_project
-  name                  = var.name
+  name                  = "${var.product_name}-${each.value}"
+  region                = each.value
   load_balancing_scheme = "INTERNAL_MANAGED"
   network               = data.google_compute_network.network.self_link
-  subnetwork            = data.google_compute_subnetwork.network.self_link
+  subnetwork            = data.google_compute_subnetwork.network[each.value].self_link
   target                = google_compute_target_http_proxy.default.self_link
-  ip_address            = var.ip_address
+  ip_address            = var.ip_address[each.value]
   ip_protocol           = var.ip_protocol
   port_range            = var.port
 }
 
-# Global Backend Service
+# Regional Backend Service
 resource "google_compute_backend_service" "default" {
+  for_each              = toset(var.regions)
   project               = var.project
-  name                  = var.name
+  name                  = "${var.product_name}-${each.value}"
   load_balancing_scheme = "INTERNAL_MANAGED"
   protocol              = var.ip_protocol
   timeout_sec           = 30
-  health_checks         = [google_compute_health_check.nba_hc.id]
+  health_checks         = [google_compute_health_check.health_check.id]
   session_affinity      = "NONE"
   locality_lb_policy    = "ROUND_ROBIN"
 
   dynamic "backend" {
-    for_each = var.backends
+    for_each = var.backends[each.value] != null ? var.backends[each.value] : []
     content {
       group                 = lookup(backend.value, "group", null)
       description           = lookup(backend.value, "description", null)
@@ -51,20 +69,6 @@ resource "google_compute_backend_service" "default" {
     enable = false
   }
 
-}
-
-# Global URL Map
-resource "google_compute_url_map" "default" {
-  project         = var.project
-  name            = "${var.name}-url-map"
-  default_service = google_compute_backend_service.default.self_link
-}
-
-# Global Target HTTP Proxy
-resource "google_compute_target_http_proxy" "default" {
-  project = var.project
-  name    = "${var.name}-target-proxy"
-  url_map = google_compute_url_map.default.self_link
 }
 
 resource "google_compute_health_check" "health_check" {
@@ -89,8 +93,8 @@ resource "google_compute_health_check" "health_check" {
 # Firewall Rules
 resource "google_compute_firewall" "default-ilb-fw" {
   count   = var.create_backend_firewall ? 1 : 0
-  project = var.network_project == "" ? var.project : var.network_project
-  name    = "${var.name}-ilb-fw"
+  project = var.network_project
+  name    = "${var.product_name}-ilb-fw"
   network = data.google_compute_network.network.name
 
   allow {
@@ -113,10 +117,10 @@ resource "google_compute_firewall" "default-ilb-fw" {
 }
 
 resource "google_compute_firewall" "default-hc" {
-  count   = var.create_health_check_firewall ? 1 : 0
-  project = var.network_project == "" ? var.project : var.network_project
-  name    = "${var.name}-hc"
-  network = data.google_compute_network.network.name
+  for_each = var.create_health_check_firewall ? toset(var.regions) : []
+  project  = var.network_project
+  name     = "${var.product_name}-${each.value}-hc"
+  network  = data.google_compute_network.network.name
 
   allow {
     protocol = "tcp"
@@ -137,21 +141,17 @@ resource "google_compute_firewall" "default-hc" {
 
 # DNS CONFIG
 
-# DNS Managed Zone
-resource "google_dns_managed_zone" "default" {
-  count       = var.dns_record_name != "" ? 1 : 0
-  project     = var.dns_project == "" ? var.project : var.dns_project
-  name        = var.dns_managed_zone_name
-  dns_name    = "internal.dapperlabs."
-  description = "Internal DNS zone for Dapper Labs"
+data "google_dns_managed_zone" "default" {
+  project = var.network_project
+  name    = var.dns_managed_zone_name
 }
 
 # DNS Record Set with Geo Routing Policy
 resource "google_dns_record_set" "geo" {
   count        = var.dns_record_name != "" ? 1 : 0
   name         = var.dns_record_name
-  managed_zone = google_dns_managed_zone.default[0].name
-  project      = var.dns_project == "" ? var.project : var.dns_project
+  managed_zone = data.google_dns_managed_zone.default.name
+  project      = var.network_project
   type         = "A"
   ttl          = var.dns_ttl
 

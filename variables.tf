@@ -4,10 +4,15 @@ variable "project" {
   default     = ""
 }
 
-variable "region" {
-  description = "Region for cloud resources."
+variable "regions" {
+  description = "Regions for cloud resources."
+  type        = list(string)
+  default     = ["us-west1"]
+}
+
+variable "default_region" {
+  description = "The region used for the default backend service in the URL map"
   type        = string
-  default     = "us-central1"
 }
 
 variable "network" {
@@ -34,8 +39,8 @@ variable "name" {
 }
 
 variable "backends" {
-  description = "List of backends, should be a map of key-value pairs for each backend, must have the 'group' key."
-  type        = list(any)
+  description = "Map of regions to lists of backends. Each backend should be a map of key-value pairs, must have the 'group' key."
+  type        = map(list(any))
 }
 
 variable "session_affinity" {
@@ -104,9 +109,8 @@ variable "target_service_accounts" {
 }
 
 variable "ip_address" {
-  description = "IP address of the internal load balancer, if empty one will be assigned. Default is empty."
-  type        = string
-  default     = null
+  description = "Map of region to IP address for each regional forwarding rule. IPs should be pre-allocated in the shared VPC."
+  type        = map(string)
 }
 
 variable "ip_protocol" {
