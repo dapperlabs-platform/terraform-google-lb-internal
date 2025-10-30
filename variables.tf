@@ -13,6 +13,7 @@ variable "regions" {
 variable "default_region" {
   description = "The region used for the default backend service in the URL map"
   type        = string
+  default     = "us-west1"
 }
 
 variable "network" {
