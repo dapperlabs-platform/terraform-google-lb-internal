@@ -112,7 +112,7 @@ resource "google_compute_firewall" "default-ilb-fw" {
     ports    = var.port_range
   }
 
-  source_ranges           = var.source_ip_ranges
+  source_ranges           = [each.value.proxy_only_ip]
   source_tags             = var.source_tags
   source_service_accounts = var.source_service_accounts
   target_tags             = var.target_tags
@@ -153,7 +153,7 @@ resource "google_compute_firewall" "default-hc" {
 
 data "google_dns_managed_zone" "default" {
   project = var.network_project
-  name    = var.dns_name
+  name    = var.dns_managed_zone_name
 }
 
 # DNS Record Set with Geo Routing Policy
