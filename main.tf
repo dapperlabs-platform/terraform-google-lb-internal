@@ -2,7 +2,8 @@
 
 locals {
   default_region = var.default_region != null ? var.default_region : keys(var.regions)[0]
-  # Collect all proxy-only IPs from all regions for firewall rules
+  # Collect all proxy-only subnet CIDR ranges from all regions for firewall rules
+  all_proxy_subnet_ranges = [for k, v in data.google_compute_subnetwork.proxy_only : v.ip_cidr_range]
 }
 
 data "google_compute_network" "network" {
@@ -119,7 +120,7 @@ resource "google_compute_firewall" "default-ilb-fw" {
     ports    = var.port_range
   }
   direction               = "INGRESS"
-  source_ranges           = [for k, v in var.regions : data.google_compute_subnetwork.proxy_only[k].ip_cidr_range]
+  source_ranges           = local.all_proxy_subnet_ranges
   source_tags             = var.source_tags
   source_service_accounts = var.source_service_accounts
   target_tags             = var.target_tags
