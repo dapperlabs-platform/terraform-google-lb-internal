@@ -53,7 +53,7 @@ resource "google_compute_backend_service" "default" {
   project               = var.project
   name                  = "${var.product_name}-${each.key}"
   load_balancing_scheme = "INTERNAL_MANAGED"
-  protocol              = var.ip_protocol
+  protocol              = var.enpoint_protocol
   timeout_sec           = 30
   health_checks         = [google_compute_health_check.health_check.id]
   session_affinity      = "NONE"

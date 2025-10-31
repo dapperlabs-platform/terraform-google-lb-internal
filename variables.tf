@@ -53,6 +53,12 @@ variable "backends" {
   }))
 }
 
+variable "enpoint_protocol" {
+  description = "The protocol for the backend services. TCP or UDP."
+  type        = string
+  default     = "http"
+}
+
 variable "session_affinity" {
   description = "The session affinity for the backends example: NONE, CLIENT_IP. Default is `NONE`."
   type        = string
