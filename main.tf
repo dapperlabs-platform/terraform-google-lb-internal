@@ -171,16 +171,22 @@ resource "google_dns_record_set" "geo" {
 
   routing_policy {
     enable_geo_fencing = var.enable_geo_fencing
-  }
-  dynamic "internal_load_balancers" {
-    for_each = var.regions
-    content {
-      ip_address         = google_compute_forwarding_rule.default[each.key].ip_address
-      ip_protocol        = "tcp"
-      load_balancer_type = "globalL7ilb"
-      network_url        = data.google_compute_network.network.self_link
-      port               = "80"
-      project            = var.network_project
+    geo {
+      location = var.default_region
+      health_checked_targets {
+        dynamic "internal_load_balancers" {
+          for_each = var.regions
+          content {
+            ip_address         = google_compute_forwarding_rule.default[each.key].ip_address
+            ip_protocol        = "tcp"
+            load_balancer_type = "globalL7ilb"
+            network_url        = data.google_compute_network.network.self_link
+            port               = "80"
+            project            = var.network_project
+          }
+        }
+      }
     }
+
   }
 }
