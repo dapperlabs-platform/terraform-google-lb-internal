@@ -32,26 +32,25 @@ resource "google_compute_url_map" "default" {
   default_service = google_compute_backend_service.default[local.default_region].self_link
 }
 
-# Regional Target HTTP Proxy
+# Global Target HTTP Proxy
 resource "google_compute_target_http_proxy" "default" {
-  for_each = var.regions
-  project  = var.network_project
-  name     = "${var.product_name}-${each.key}-http-proxy"
-  url_map  = google_compute_url_map.default.self_link
+  project = var.network_project
+  name    = "${var.product_name}-internal-lb-http-proxy"
+  url_map = google_compute_url_map.default.self_link
 }
 
-# Regional Forwarding Rule
-resource "google_compute_forwarding_rule" "default" {
+# Forwarding Rule
+resource "google_compute_global_forwarding_rule" "default" {
   for_each              = var.regions
   project               = var.network_project
   name                  = "${var.product_name}-${each.key}"
-  region                = each.key
   load_balancing_scheme = "INTERNAL_MANAGED"
   network               = data.google_compute_network.network.self_link
   subnetwork            = data.google_compute_subnetwork.subnetwork[each.key].self_link
-  target                = google_compute_target_http_proxy.default[each.key].self_link
+  target                = google_compute_target_http_proxy.default.self_link
   ip_protocol           = var.ip_protocol
   port_range            = var.port
+  network_tier          = "PREMIUM"
 }
 
 # Regional Backend Service
