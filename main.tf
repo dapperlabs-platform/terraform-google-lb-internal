@@ -106,19 +106,20 @@ resource "google_compute_health_check" "health_check" {
 resource "google_compute_firewall" "default-ilb-fw" {
   count   = var.create_backend_firewall ? 1 : 0
   project = var.network_project
-  name    = "${var.product_name}-ilb-fw"
+  name    = "${var.product_name}-ilb"
   network = data.google_compute_network.network.name
 
   allow {
     protocol = lower(var.ip_protocol)
     ports    = var.port_range
   }
-
+  direction               = "INGRESS"
   source_ranges           = local.all_proxy_ips
   source_tags             = var.source_tags
   source_service_accounts = var.source_service_accounts
   target_tags             = var.target_tags
   target_service_accounts = var.target_service_accounts
+
 
   dynamic "log_config" {
     for_each = var.firewall_enable_logging ? [true] : []
@@ -138,7 +139,7 @@ resource "google_compute_firewall" "default-hc" {
     protocol = "tcp"
     ports    = [var.health_check["port"]]
   }
-
+  direction               = "INGRESS"
   source_ranges           = ["130.211.0.0/22", "35.191.0.0/16"] # Google Defaults Health check IPs https://cloud.google.com/load-balancing/docs/health-check-concepts#ip-ranges
   target_tags             = var.target_tags
   target_service_accounts = var.target_service_accounts
