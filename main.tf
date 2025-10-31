@@ -13,7 +13,7 @@ data "google_compute_network" "network" {
 
 data "google_compute_subnetwork" "subnetwork" {
   for_each = var.regions
-  name     = var.subnetwork
+  name     = "${var.subnetwork}-${each.key}"
   project  = var.network_project
   region   = each.key
 }
