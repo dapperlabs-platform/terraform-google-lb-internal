@@ -5,12 +5,12 @@ output "ip_address" {
 
 output "forwarding_rule" {
   description = "The regional forwarding rule self_links (map by region)."
-  value       = { for k, v in google_compute_forwarding_rule.default : k => v.self_link }
+  value       = { for k, v in google_compute_global_forwarding_rule.default : k => v.self_link }
 }
 
 output "forwarding_rule_id" {
   description = "The regional forwarding rule ids (map by region)."
-  value       = { for k, v in google_compute_forwarding_rule.default : k => v.id }
+  value       = { for k, v in google_compute_global_forwarding_rule.default : k => v.id }
 }
 
 output "backend_service" {
