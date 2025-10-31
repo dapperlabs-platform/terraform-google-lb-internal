@@ -19,13 +19,11 @@ output "backend_service" {
 }
 
 output "url_map" {
-  description = "The URL map self_link."
-  value       = google_compute_url_map.default.self_link
+  value = google_compute_url_map.default.self_link
 }
 
 output "target_proxy" {
-  description = "The regional target HTTP proxy self_links (map by region)."
-  value       = { for k, v in google_compute_target_http_proxy.default : k => v.self_link }
+  value = google_compute_target_http_proxy.default.self_link
 }
 
 output "subnetwork" {

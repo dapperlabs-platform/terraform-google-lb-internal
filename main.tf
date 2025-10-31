@@ -184,7 +184,7 @@ resource "google_dns_record_set" "geo" {
           for_each = var.regions
           iterator = region
           content {
-            ip_address         = google_compute_forwarding_rule.default[region.key].ip_address
+            ip_address         = google_compute_global_forwarding_rule.default[region.key].ip_address
             ip_protocol        = "tcp"
             load_balancer_type = "globalL7ilb"
             network_url        = data.google_compute_network.network.self_link
