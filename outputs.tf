@@ -1,6 +1,6 @@
 output "ip_address" {
   description = "The internal IP addresses assigned to the regional forwarding rules (map by region)."
-  value       = { for k, v in google_compute_forwarding_rule.default : k => v.ip_address }
+  value       = { for k, v in google_compute_global_forwarding_rule.default : k => v.ip_address }
 }
 
 output "forwarding_rule" {
