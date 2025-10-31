@@ -3,7 +3,7 @@
 locals {
   default_region = var.default_region != null ? var.default_region : keys(var.regions)[0]
   # Collect all proxy-only IPs from all regions for firewall rules
-  all_proxy_ips = [for region in var.regions : region.proxy_only_ip]
+  all_proxy_ips = [for region in var.regions : region.proxy_only_subnet]
 }
 
 data "google_compute_network" "network" {
@@ -20,7 +20,7 @@ data "google_compute_subnetwork" "subnetwork" {
 
 data "google_compute_subnetwork" "proxy_only" {
   for_each = var.regions
-  name     = each.value.proxy_only_subnet
+  name     = "${each.key}-proxy-only"
   project  = var.network_project
   region   = each.key
 }
