@@ -194,3 +194,26 @@ resource "google_dns_record_set" "geo" {
     }
   }
 }
+resource "google_dns_record_set" "geo" {
+  count        = var.dns_record_name != null ? 1 : 0
+  name         = "${var.dns_record_name}.${var.dns_name}"
+  managed_zone = data.google_dns_managed_zone.default.name
+  project      = var.network_project
+  type         = "A"
+  ttl          = var.dns_ttl
+
+  routing_policy {
+    enable_geo_fencing = var.enable_geo_fencing
+  }
+  dynamic "internal_load_balancers" {
+    for_each = var.regions
+    content {
+      ip_address         = google_compute_forwarding_rule.default[each.key].ip_address
+      ip_protocol        = "tcp"
+      load_balancer_type = "globalL7ilb"
+      network_url        = data.google_compute_network.network.self_link
+      port               = "80"
+      project            = var.network_project
+    }
+  }
+}

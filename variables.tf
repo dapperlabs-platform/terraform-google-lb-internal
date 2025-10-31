@@ -185,22 +185,10 @@ variable "dns_ttl" {
   default     = 300
 }
 
-variable "geo_locations" {
-  description = "List of geo locations for DNS routing policy"
-  type = list(object({
-    location = string
-    health_checked_targets = optional(object({
-      internal_load_balancers = list(object({
-        ip_address         = string
-        ip_protocol        = string
-        load_balancer_type = string
-        network_url        = string
-        port               = string
-        project            = string
-      }))
-    }))
-  }))
-  default = []
+variable "enable_geo_fencing" {
+  description = "Enable geo fencing for DNS record"
+  type        = bool
+  default     = false
 }
 
 # Subnetwork specific variables for advanced configuration
