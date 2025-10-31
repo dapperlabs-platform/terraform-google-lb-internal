@@ -48,7 +48,7 @@ variable "backends" {
     group                 = string
     description           = optional(string, null),
     balancing_mode        = optional(string, "RATE")
-    capacity_scaler       = optional(number, 100)
+    capacity_scaler       = optional(number, 1.0)
     max_rate_per_endpoint = optional(number, 100)
   }))
 }
