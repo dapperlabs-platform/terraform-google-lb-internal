@@ -160,40 +160,7 @@ data "google_dns_managed_zone" "default" {
 }
 
 # DNS Record Set with Geo Routing Policy
-resource "google_dns_record_set" "geo" {
-  count        = var.dns_record_name != null ? 1 : 0
-  name         = "${var.dns_record_name}.${var.dns_name}"
-  managed_zone = data.google_dns_managed_zone.default.name
-  project      = var.network_project
-  type         = "A"
-  ttl          = var.dns_ttl
 
-  routing_policy {
-    dynamic "geo" {
-      for_each = var.geo_locations
-      content {
-        location = geo.value.location
-
-        dynamic "health_checked_targets" {
-          for_each = geo.value.health_checked_targets != null ? [geo.value.health_checked_targets] : []
-          content {
-            dynamic "internal_load_balancers" {
-              for_each = health_checked_targets.value.internal_load_balancers
-              content {
-                ip_address         = internal_load_balancers.value.ip_address
-                ip_protocol        = internal_load_balancers.value.ip_protocol
-                load_balancer_type = internal_load_balancers.value.load_balancer_type
-                network_url        = internal_load_balancers.value.network_url
-                port               = internal_load_balancers.value.port
-                project            = internal_load_balancers.value.project
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
 resource "google_dns_record_set" "geo" {
   count        = var.dns_record_name != null ? 1 : 0
   name         = "${var.dns_record_name}.${var.dns_name}"
