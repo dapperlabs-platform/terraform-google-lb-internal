@@ -159,14 +159,18 @@ variable "labels" {
 }
 
 variable "dns_record_name" {
-  description = "DNS record name (e.g., '*.studio-platform.internal.dapperlabs.')"
+  description = "DNS record name"
+  type        = string
+}
+
+variable "dns_name" {
+  description = "Name of the DNS managed zone"
   type        = string
 }
 
 variable "dns_managed_zone_name" {
   description = "Name of the DNS managed zone"
   type        = string
-  default     = "dapperlabs-internal"
 }
 
 variable "dns_project" {

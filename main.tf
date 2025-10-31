@@ -137,7 +137,7 @@ resource "google_compute_firewall" "default-hc" {
     ports    = [var.health_check["port"]]
   }
 
-  source_ranges           = ["130.211.0.0/22", "35.191.0.0/16"]
+  source_ranges           = ["130.211.0.0/22", "35.191.0.0/16"] # Google Defaults Health check IPs https://cloud.google.com/load-balancing/docs/health-check-concepts#ip-ranges
   target_tags             = var.target_tags
   target_service_accounts = var.target_service_accounts
 
@@ -153,13 +153,13 @@ resource "google_compute_firewall" "default-hc" {
 
 data "google_dns_managed_zone" "default" {
   project = var.network_project
-  name    = var.dns_managed_zone_name
+  name    = var.dns_name
 }
 
 # DNS Record Set with Geo Routing Policy
 resource "google_dns_record_set" "geo" {
-  count        = var.dns_record_name != "" ? 1 : 0
-  name         = var.dns_record_name
+  count        = var.dns_record_name != null ? 1 : 0
+  name         = "${var.dns_record_name}.${var.dns_name}"
   managed_zone = data.google_dns_managed_zone.default.name
   project      = var.network_project
   type         = "A"
