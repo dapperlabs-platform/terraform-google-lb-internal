@@ -2,6 +2,8 @@
 
 locals {
   default_region = var.default_region != null ? var.default_region : keys(var.regions)[0]
+  # Collect all proxy-only IPs from all regions for firewall rules
+  all_proxy_ips = [for region in var.regions : region.proxy_only_ip]
 }
 
 data "google_compute_network" "network" {
@@ -112,7 +114,7 @@ resource "google_compute_firewall" "default-ilb-fw" {
     ports    = var.port_range
   }
 
-  source_ranges           = [each.value.proxy_only_ip]
+  source_ranges           = local.all_proxy_ips
   source_tags             = var.source_tags
   source_service_accounts = var.source_service_accounts
   target_tags             = var.target_tags
