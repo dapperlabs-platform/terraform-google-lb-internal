@@ -7,8 +7,7 @@ variable "project" {
 variable "regions" {
   description = "Map of regions with their configuration. Each region must have zones and proxy_only_ip."
   type = map(object({
-    zones         = list(string)
-    proxy_only_ip = string
+    zones = list(string)
   }))
 }
 

@@ -13,7 +13,14 @@ data "google_compute_network" "network" {
 
 data "google_compute_subnetwork" "subnetwork" {
   for_each = var.regions
-  name     = "${var.subnetwork}-${each.key}"
+  name     = var.subnetwork
+  project  = var.network_project
+  region   = each.key
+}
+
+data "google_compute_subnetwork" "proxy_only" {
+  for_each = var.regions
+  name     = each.value.proxy_only_subnet
   project  = var.network_project
   region   = each.key
 }
@@ -42,7 +49,6 @@ resource "google_compute_forwarding_rule" "default" {
   network               = data.google_compute_network.network.self_link
   subnetwork            = data.google_compute_subnetwork.subnetwork[each.key].self_link
   target                = google_compute_target_http_proxy.default.self_link
-  ip_address            = each.value.proxy_only_ip
   ip_protocol           = var.ip_protocol
   port_range            = var.port
 }
@@ -178,7 +184,7 @@ resource "google_dns_record_set" "geo" {
           for_each = var.regions
           iterator = region
           content {
-            ip_address         = google_compute_forwarding_rule.default[region.key].ip_address
+            ip_address         = data.google_compute_subnetwork.proxy_only[region.key].ip_address
             ip_protocol        = "tcp"
             load_balancer_type = "globalL7ilb"
             network_url        = data.google_compute_network.network.self_link
