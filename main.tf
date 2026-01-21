@@ -200,11 +200,12 @@ resource "google_dns_record_set" "geo" {
 
 # Regional DNS Records
 # Creates one DNS record per region pointing directly to that region's LB IP
-# Pattern: <regional_dns_prefix>.<region>.<dns_name>
+# Pattern: <regional_dns_prefix>.<region>.<product_name>.<dns_name>
+# Example: *.metrics.us-west1.atlas.internal.dapperlabs.
 
 resource "google_dns_record_set" "regional" {
   for_each     = var.regional_dns_prefix != null ? var.regions : {}
-  name         = "${var.regional_dns_prefix}.${each.key}.${var.dns_name}"
+  name         = "${var.regional_dns_prefix}.${each.key}.${var.product_name}.${var.dns_name}"
   managed_zone = data.google_dns_managed_zone.default.name
   project      = var.network_project
   type         = "A"
