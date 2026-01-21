@@ -166,6 +166,7 @@ variable "labels" {
 variable "geo_dns_prefix" {
   description = "GEO DNS record name"
   type        = string
+  default     = null
 }
 
 variable "dns_name" {
