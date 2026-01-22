@@ -168,8 +168,8 @@ data "google_dns_managed_zone" "default" {
 # DNS Record Set with Geo Routing Policy
 
 resource "google_dns_record_set" "geo" {
-  count        = var.dns_record_name != null ? 1 : 0
-  name         = "${var.dns_record_name}.${var.dns_name}"
+  count        = var.geo_dns_prefix != null ? 1 : 0
+  name         = "${var.geo_dns_prefix}.${var.dns_name}"
   managed_zone = data.google_dns_managed_zone.default.name
   project      = var.network_project
   type         = "A"
@@ -196,4 +196,19 @@ resource "google_dns_record_set" "geo" {
     }
 
   }
+}
+
+# Regional DNS Records
+# Creates one DNS record per region pointing directly to that region's LB IP
+# Pattern: <regional_dns_prefix>.<region>.<product_name>.<dns_name>
+# Example: *.metrics.us-west1.atlas.internal.dapperlabs.
+
+resource "google_dns_record_set" "regional" {
+  for_each     = var.regional_dns_prefix != null ? var.regions : {}
+  name         = "${var.regional_dns_prefix}.${each.key}.${var.product_name}.${var.dns_name}"
+  managed_zone = data.google_dns_managed_zone.default.name
+  project      = var.network_project
+  type         = "A"
+  ttl          = var.dns_ttl
+  rrdatas      = [google_compute_global_forwarding_rule.default[each.key].ip_address]
 }

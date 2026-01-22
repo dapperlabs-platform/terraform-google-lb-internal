@@ -163,9 +163,10 @@ variable "labels" {
   type        = map(string)
 }
 
-variable "dns_record_name" {
-  description = "DNS record name"
+variable "geo_dns_prefix" {
+  description = "GEO DNS record name"
   type        = string
+  default     = null
 }
 
 variable "dns_name" {
@@ -194,6 +195,12 @@ variable "enable_geo_fencing" {
   description = "Enable geo fencing for DNS record"
   type        = bool
   default     = false
+}
+
+variable "regional_dns_prefix" {
+  description = "Optional: Create region-specific DNS records in addition to geo-routed record. Pattern: <prefix>.<region>.<dns_name>. Useful for direct regional access."
+  type        = string
+  default     = null
 }
 
 # Subnetwork specific variables for advanced configuration
